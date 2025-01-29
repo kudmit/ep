@@ -4,11 +4,11 @@ from fastapi import FastAPI, Request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
-# Указываем логирование для отладки
+# Настроим логирование
 logging.basicConfig(level=logging.INFO)
 
-# === УСТАНОВКА ПЕРЕМЕННЫХ ===
-TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")  # Храним токен в переменных среды
+# === ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ ===
+TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")  # Убедись, что токен берется правильно
 WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://your-app-name.onrender.com/webhook")
 
 app = FastAPI()
@@ -21,6 +21,7 @@ user_data = {}
 @app.on_event("startup")
 async def on_startup():
     try:
+        await telegram_app.initialize()  # <=== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАПУСКЕ
         await telegram_app.bot.set_webhook(WEBHOOK_URL)
         logging.info(f"✅ Вебхук установлен: {WEBHOOK_URL}")
     except Exception as e:
@@ -32,13 +33,16 @@ async def handle_webhook(request: Request):
     try:
         data = await request.json()
         update = Update.de_json(data, telegram_app.bot)
+
+        await telegram_app.initialize()  # <=== ОБЯЗАТЕЛЬНАЯ ИНИЦИАЛИЗАЦИЯ ПЕРЕД ОБРАБОТКОЙ
         await telegram_app.process_update(update)
+
         return {"status": "ok"}
     except Exception as e:
         logging.error(f"❌ Ошибка обработки вебхука: {e}")
         return {"status": "error", "message": str(e)}
 
-# === ОБРАБОТКА КОМАНД ===
+# === КОМАНДЫ ===
 async def start(update: Update, context):
     keyboard = [
         [InlineKeyboardButton("Deutsch", callback_data="lang_de")],
