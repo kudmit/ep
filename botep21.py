@@ -6,7 +6,7 @@ from telegram.ext import (
 )
 
 TOKEN = "8141554325:AAEHm1Q0HvQ3O5lbyaxp0DD0R93pSYhemQ8" 
-WEBHOOK_URL = "WEBHOOK_URL"  
+WEBHOOK_URL = "https://ep123456789.onrender.com/webhook"  
 
 app = FastAPI()
 telegram_app = ApplicationBuilder().token(TOKEN).build()
