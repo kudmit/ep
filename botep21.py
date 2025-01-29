@@ -4,12 +4,12 @@ from fastapi import FastAPI, Request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
-# Настроим логирование
+# Настраиваем логирование (вывод ошибок в консоль Render)
 logging.basicConfig(level=logging.INFO)
 
-# === ПЕРЕМЕННЫЕ ОКРУЖЕНИЯ ===
-TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")  # Убедись, что токен берется правильно
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://your-app-name.onrender.com/webhook")
+# === Устанавливаем переменные окружения ===
+TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")  # Храним токен в Render
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://your-app-name.onrender.com/webhook")  # Ссылка для вебхука
 
 app = FastAPI()
 telegram_app = ApplicationBuilder().token(TOKEN).build()
@@ -17,32 +17,35 @@ telegram_app = ApplicationBuilder().token(TOKEN).build()
 LANGUAGES = {"de": "Deutsch", "en": "English", "ru": "Русский"}
 user_data = {}
 
-# === УСТАНАВЛИВАЕМ ВЕБХУК ===
+# === Устанавливаем вебхук ===
 @app.on_event("startup")
 async def on_startup():
     try:
-        await telegram_app.initialize()  # <=== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАПУСКЕ
+        await telegram_app.initialize()  # Обязательная инициализация!
         await telegram_app.bot.set_webhook(WEBHOOK_URL)
         logging.info(f"✅ Вебхук установлен: {WEBHOOK_URL}")
     except Exception as e:
         logging.error(f"❌ Ошибка установки вебхука: {e}")
 
-# === ОБРАБОТКА ВЕБХУКА ===
+# === Обработка вебхука ===
 @app.post("/webhook")
 async def handle_webhook(request: Request):
     try:
         data = await request.json()
+        print(f"📥 Получен вебхук: {data}")  # Логируем входящие данные
+        
         update = Update.de_json(data, telegram_app.bot)
 
-        await telegram_app.initialize()  # <=== ОБЯЗАТЕЛЬНАЯ ИНИЦИАЛИЗАЦИЯ ПЕРЕД ОБРАБОТКОЙ
+        await telegram_app.initialize()  # Обязательная инициализация перед обработкой обновлений
         await telegram_app.process_update(update)
 
         return {"status": "ok"}
+    
     except Exception as e:
         logging.error(f"❌ Ошибка обработки вебхука: {e}")
         return {"status": "error", "message": str(e)}
 
-# === КОМАНДЫ ===
+# === Команда /start ===
 async def start(update: Update, context):
     keyboard = [
         [InlineKeyboardButton("Deutsch", callback_data="lang_de")],
@@ -52,6 +55,7 @@ async def start(update: Update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("Пожалуйста, выберите язык:", reply_markup=reply_markup)
 
+# === Обработчик выбора языка ===
 async def language_selection(update: Update, context):
     query = update.callback_query
     await query.answer()
@@ -66,6 +70,7 @@ async def language_selection(update: Update, context):
     }
     await query.edit_message_text(messages[selected_lang])
 
+# === Обработчик сообщений (если пользователь ввел что-то не так) ===
 async def handle_message(update: Update, context):
     user_id = update.message.from_user.id
     if user_id not in user_data:
@@ -80,7 +85,7 @@ async def handle_message(update: Update, context):
     }
     await update.message.reply_text(error_messages[user_language])
 
-# === ДОБАВЛЕНИЕ ОБРАБОТЧИКОВ ===
+# === Добавляем обработчики команд ===
 telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(CallbackQueryHandler(language_selection, pattern="^lang_.*"))
 telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
