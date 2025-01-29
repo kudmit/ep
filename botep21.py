@@ -1,12 +1,15 @@
 import os
+import logging
 from fastapi import FastAPI, Request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
-TOKEN = "8141554325:AAEHm1Q0HvQ3O5lbyaxp0DD0R93pSYhemQ8" 
-WEBHOOK_URL = "https://ep123456789.onrender.com/webhook"  
+# Указываем логирование для отладки
+logging.basicConfig(level=logging.INFO)
+
+# === УСТАНОВКА ПЕРЕМЕННЫХ ===
+TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")  # Храним токен в переменных среды
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://your-app-name.onrender.com/webhook")
 
 app = FastAPI()
 telegram_app = ApplicationBuilder().token(TOKEN).build()
@@ -14,18 +17,28 @@ telegram_app = ApplicationBuilder().token(TOKEN).build()
 LANGUAGES = {"de": "Deutsch", "en": "English", "ru": "Русский"}
 user_data = {}
 
+# === УСТАНАВЛИВАЕМ ВЕБХУК ===
 @app.on_event("startup")
 async def on_startup():
-    await telegram_app.bot.set_webhook(WEBHOOK_URL)
-    print("")
+    try:
+        await telegram_app.bot.set_webhook(WEBHOOK_URL)
+        logging.info(f"✅ Вебхук установлен: {WEBHOOK_URL}")
+    except Exception as e:
+        logging.error(f"❌ Ошибка установки вебхука: {e}")
 
+# === ОБРАБОТКА ВЕБХУКА ===
 @app.post("/webhook")
 async def handle_webhook(request: Request):
-    data = await request.json()
-    update = Update.de_json(data, telegram_app.bot)
-    await telegram_app.process_update(update)
+    try:
+        data = await request.json()
+        update = Update.de_json(data, telegram_app.bot)
+        await telegram_app.process_update(update)
+        return {"status": "ok"}
+    except Exception as e:
+        logging.error(f"❌ Ошибка обработки вебхука: {e}")
+        return {"status": "error", "message": str(e)}
 
-
+# === ОБРАБОТКА КОМАНД ===
 async def start(update: Update, context):
     keyboard = [
         [InlineKeyboardButton("Deutsch", callback_data="lang_de")],
@@ -34,7 +47,6 @@ async def start(update: Update, context):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("Пожалуйста, выберите язык:", reply_markup=reply_markup)
-
 
 async def language_selection(update: Update, context):
     query = update.callback_query
@@ -64,6 +76,7 @@ async def handle_message(update: Update, context):
     }
     await update.message.reply_text(error_messages[user_language])
 
+# === ДОБАВЛЕНИЕ ОБРАБОТЧИКОВ ===
 telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(CallbackQueryHandler(language_selection, pattern="^lang_.*"))
 telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
