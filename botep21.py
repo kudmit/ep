@@ -39,7 +39,7 @@ async def handle_webhook(request: Request):
         return {"status": "ok"}
     
     except Exception as e:
-        logging.error(f"❌ Ошибка обработки вебхука: {e}")
+        logging.error(f"❌: {e}")
         return {"status": "error", "message": str(e)}
 
 
@@ -50,7 +50,7 @@ async def start(update: Update, context):
         [InlineKeyboardButton("Русский", callback_data="lang_ru")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Пожалуйста, выберите язык:", reply_markup=reply_markup)
+    await update.message.reply_text(" ", reply_markup=reply_markup)
 
 
 async def language_selection(update: Update, context):
