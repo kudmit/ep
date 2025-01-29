@@ -49,7 +49,7 @@ async def start(update: Update, context):
         [InlineKeyboardButton("Русский", callback_data="lang_ru")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-   await update.message.reply_text(" ", reply_markup=reply_markup)
+   await update.message.reply_text(" Please select a language:", reply_markup=reply_markup)
 
 
 
