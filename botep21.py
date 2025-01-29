@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
-# Настраиваем логирование (вывод ошибок в консоль Render)
+# === Настроим логирование ===
 logging.basicConfig(level=logging.INFO)
 
 # === Устанавливаем переменные окружения ===
@@ -36,7 +36,7 @@ async def handle_webhook(request: Request):
         
         update = Update.de_json(data, telegram_app.bot)
 
-        await telegram_app.initialize()  # Обязательная инициализация перед обработкой обновлений
+        await telegram_app.initialize()  # <=== ДОБАВЛЕНО! Теперь бот инициализирован перед обновлениями.
         await telegram_app.process_update(update)
 
         return {"status": "ok"}
