@@ -5,7 +5,7 @@ from telegram.ext import (
     ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 )
 
-TOKEN = "YOUR_BOT_TOKEN" 
+TOKEN = "8141554325:AAEHm1Q0HvQ3O5lbyaxp0DD0R93pSYhemQ8" 
 WEBHOOK_URL = "WEBHOOK_URL"  
 
 app = FastAPI()
